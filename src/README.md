@@ -15,7 +15,7 @@
 Peaka ODBC Driver can be installed in two ways:
 
 - **Setup installer** (`PeakaODBC_Setup_2.3.9.1001.exe`) — guided wizard, recommended for most users
-- **ZIP / manual** (`peaka_odbc.zip`) — extract and run `install.bat`, recommended for advanced users or scripted deployments
+- **ZIP / manual** (`peaka_odbc.zip`) — extract and run `bin\install.bat`, recommended for advanced users or scripted deployments
 
 Both methods install the same driver and produce the same result.
 
@@ -45,7 +45,7 @@ A UAC prompt will appear — confirm it. The DSN installer will then open.
 
 If you skip this step, you can create a DSN at any time by running:
 ```
-C:\Program Files\Peaka\ODBC\tools\install-dsn.bat
+C:\Program Files\Peaka\ODBC\bin\utils\install-dsn.bat
 ```
 Right-click → **Run as administrator**.
 
@@ -63,11 +63,12 @@ During uninstall, you will be asked whether to also remove existing Peaka DSNs. 
 Extract `peaka_odbc.zip` to any permanent location (e.g. `C:\Peaka\ODBC\`).
 Do not run directly from a temporary or Downloads folder.
 
-### 2. Right-click `install.bat` → Run as administrator
+### 2. Right-click `bin\install.bat` → Run as administrator
 
 ```
 peaka_odbc\
-└── install.bat   ← right-click this
+└── bin\
+    └── install.bat   ← right-click this
 ```
 
 ### 3. Choose an action from the menu
@@ -120,7 +121,7 @@ The installer detects the missing rights and adjusts behavior:
 
 **Driver installation:**
 The driver cannot be written to `HKEY_LOCAL_MACHINE`, which requires admin.
-Instead, the installer generates a file called `peaka-driver.reg` next to `install.bat`.
+Instead, the installer generates a file called `peaka-driver.reg` in the root of the extracted folder.
 You must apply it manually:
 1. Locate `peaka-driver.reg` in the `peaka_odbc` folder.
 2. Right-click it → **Merge**.
@@ -136,14 +137,14 @@ A User DSN works for interactive applications but is not visible to Windows serv
 
 ## Running Individual Tools
 
-The helper scripts are in the `tools\` subfolder and can be run directly:
+The helper scripts are in the `bin\utils\` subfolder and can be run directly:
 
 | Script | Purpose |
 |---|---|
-| `tools\install-driver.bat` | Register the driver DLL |
-| `tools\install-dsn.bat` | Create a named DSN (repeatable) |
-| `tools\uninstall.bat` | Remove a DSN or driver registration |
-| `tools\list-dsn.bat` | List all installed Peaka DSNs and drivers |
+| `bin\utils\install-driver.bat` | Register the driver DLL |
+| `bin\utils\install-dsn.bat` | Create a named DSN (repeatable) |
+| `bin\utils\uninstall.bat` | Remove a DSN or driver registration |
+| `bin\utils\list-dsn.bat` | List all installed Peaka DSNs and drivers |
 
 Right-click each one and select **Run as administrator** when prompted.
 
@@ -165,7 +166,7 @@ If you installed a 64-bit driver or DSN and don't see it, open the 64-bit ODBC A
 
 ## Creating a DSN via ODBC Administrator
 
-In addition to using `tools\install-dsn.bat`, you can create or edit a DSN directly through the ODBC Administrator. This gives you access to all configuration options including SSL, proxy, and advanced settings.
+In addition to using `bin\utils\install-dsn.bat`, you can create or edit a DSN directly through the ODBC Administrator. This gives you access to all configuration options including SSL, proxy, and advanced settings.
 
 ### 1. Open the correct ODBC Administrator
 
@@ -227,7 +228,7 @@ The `peaka.mez` file is a custom Power Query connector that lets Power BI Deskto
 ### Prerequisites
 
 - Peaka ODBC Driver installed (see above).
-- At least one DSN created (via the setup wizard or `tools\install-dsn.bat`).
+- At least one DSN created (via the setup wizard or `bin\utils\install-dsn.bat`).
 - Power BI Desktop installed.
 
 ---
@@ -236,7 +237,7 @@ The `peaka.mez` file is a custom Power Query connector that lets Power BI Deskto
 
 **If you used the Setup installer:** check "Install Power BI Desktop connector" during the wizard. The file is placed automatically.
 
-**If you used the ZIP / manual method:** copy `custom\powerbi\peaka.mez` to:
+**If you used the ZIP / manual method:** copy `extensions\powerbi\peaka.mez` to:
 ```
 %USERPROFILE%\Documents\Power BI Desktop\Custom Connectors\
 ```
@@ -352,7 +353,7 @@ The "Remove Type Name Parameters" option is likely not enabled on the DSN. Open 
 Check that your Peaka Project API Key is correct and has not expired. Re-enter the API key via **File → Options → Data source settings**.
 
 **"Data source kind does not match" warning**
-The DSN name entered in the connection dialog does not match an existing ODBC DSN. Run `tools\list-dsn.bat` to see the exact names of your installed DSNs.
+The DSN name entered in the connection dialog does not match an existing ODBC DSN. Run `bin\utils\list-dsn.bat` to see the exact names of your installed DSNs.
 
 **Published reports fail to refresh in Power BI Service**
 The on-premises data gateway must be configured with the Peaka connector and a matching data source. Follow the gateway steps above.
@@ -417,19 +418,20 @@ The Navigator panel opens and shows your Peaka catalogs, schemas, and tables. Se
 
 ```
 peaka_odbc\
-├── install.bat              Main entry point (ZIP installation)
+├── bin\
+│   ├── install.bat              Main entry point (ZIP installation)
+│   └── utils\
+│       ├── install-driver.bat
+│       ├── install-dsn.bat
+│       ├── uninstall.bat
+│       ├── list-dsn.bat
+│       └── template\            Registry templates (used internally)
 ├── driver\
 │   ├── SimbatrinoODBC64_2.3.9.1001\   64-bit driver files
 │   └── SimbatrinoODBC32_2.3.9.1001\   32-bit driver files
-├── tools\
-│   ├── install-driver.bat
-│   ├── install-dsn.bat
-│   ├── uninstall.bat
-│   ├── list-dsn.bat
-│   └── setup\               Registry templates (used internally)
-└── custom\
+└── extensions\
     └── powerbi\
-        └── peaka.mez        Power BI Desktop custom connector
+        └── peaka.mez            Power BI Desktop custom connector
 ```
 
 `peaka-driver.reg` appears in the root only when the installer runs without administrator rights.
@@ -440,20 +442,20 @@ peaka_odbc\
 
 **"Setup routines could not be found" / error 126**
 The driver DLL path in the registry is wrong or the driver has never been registered.
-Run `tools\install-driver.bat` as administrator and choose **yes** when asked to reinstall.
+Run `bin\utils\install-driver.bat` as administrator and choose **yes** when asked to reinstall.
 
 **Visual C++ Runtime error on first use**
 The Visual C++ Redistributable for Visual Studio 2022 (x64) is missing. Download and install it from `https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist` and try again.
 
 **DSN appears in ODBC Administrator but connection fails**
 Check that the Host and Port values are correct.
-Open `tools\list-dsn.bat` to inspect the registered values, then re-run `tools\install-dsn.bat`.
+Open `bin\utils\list-dsn.bat` to inspect the registered values, then re-run `bin\utils\install-dsn.bat`.
 
 **DSN is not visible to a Windows service**
-User DSNs are not visible to services. Re-run `tools\install-dsn.bat` as administrator and choose **System-wide** scope.
+User DSNs are not visible to services. Re-run `bin\utils\install-dsn.bat` as administrator and choose **System-wide** scope.
 
 **I need separate connections for different environments**
-Run `tools\install-dsn.bat` multiple times with different DSN names (e.g. `Peaka_US`, `Peaka_EU`, `Peaka_Test`).
+Run `bin\utils\install-dsn.bat` multiple times with different DSN names (e.g. `Peaka_US`, `Peaka_EU`, `Peaka_Test`).
 Each DSN can point to a different host while sharing the same driver.
 
 **I don't see the 64-bit driver in ODBC Administrator**

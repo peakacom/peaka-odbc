@@ -7,10 +7,10 @@ setlocal enabledelayedexpansion
 ::   Run once per machine (or per driver bit).
 :: ================================================
 
-:: Detect script directory (tools\) and root dir (parent)
+:: Detect script directory (bin\utils\) and root dir (two levels up)
 set "SCRIPT_DIR=%~dp0"
 if "!SCRIPT_DIR:~-1!"=="\" set "SCRIPT_DIR=!SCRIPT_DIR:~0,-1!"
-for %%F in ("!SCRIPT_DIR!\..") do set "ROOT_DIR=%%~fF"
+for %%F in ("!SCRIPT_DIR!\..\..") do set "ROOT_DIR=%%~fF"
 
 :: Check admin rights
 set "IS_ADMIN=0"
@@ -156,9 +156,9 @@ goto :end_driver
 :branch_noadmin
 set "DRIVER_REG=!ROOT_DIR!\peaka-driver.reg"
 
-set "TPL=setup\Setup-64bitDriverOn64Windows.reg"
-if "%OS_BIT%"=="64" if "!DRIVER_BIT!"=="32" set "TPL=setup\Setup-32bitDriverOn64Windows.reg"
-if "%OS_BIT%"=="32" set "TPL=setup\Setup-32bitDriverOn32Windows.reg"
+set "TPL=template\Setup-64bitDriverOn64Windows.reg"
+if "%OS_BIT%"=="64" if "!DRIVER_BIT!"=="32" set "TPL=template\Setup-32bitDriverOn64Windows.reg"
+if "%OS_BIT%"=="32" set "TPL=template\Setup-32bitDriverOn32Windows.reg"
 set "TPL_FILE=!SCRIPT_DIR!\!TPL!"
 
 set "PS_TMP=%TEMP%\_peaka_tmp_drvgen.ps1"

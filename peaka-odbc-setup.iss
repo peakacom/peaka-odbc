@@ -35,10 +35,10 @@ Name: "powerbi"; Description: "Install Power BI Desktop connector (peaka.mez)"; 
 [Files]
 Source: "driver\SimbatrinoODBC64_2.3.9.1001\*"; DestDir: "{app}\driver\SimbatrinoODBC64_2.3.9.1001"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "driver\SimbatrinoODBC32_2.3.9.1001\*"; DestDir: "{app}\driver\SimbatrinoODBC32_2.3.9.1001"; Flags: recursesubdirs createallsubdirs ignoreversion
-Source: "tools\*"; DestDir: "{app}\tools"; Flags: recursesubdirs createallsubdirs ignoreversion
-Source: "install.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "custom\powerbi\peaka.mez"; DestDir: "{userdocs}\Power BI Desktop\Custom Connectors"; Flags: ignoreversion; Tasks: powerbi
+Source: "src\scripts\utils\*"; DestDir: "{app}\bin\utils"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "src\scripts\install.bat"; DestDir: "{app}\bin"; Flags: ignoreversion
+Source: "src\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\peaka.mez"; DestDir: "{userdocs}\Power BI Desktop\Custom Connectors"; Flags: ignoreversion; Tasks: powerbi
 
 ; ================================================
 [Registry]
@@ -70,7 +70,7 @@ Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\Peaka\Peaka ODBC Driver\Dr
 
 ; --- Optional: create a DSN after installation ---
 ; shellexec + Verb runas = fresh UAC prompt so both System and User DSN options are available
-Filename: "{app}\tools\install-dsn.bat"; Verb: "runas"; Description: "Create a DSN (connection) now"; Flags: postinstall shellexec skipifsilent; WorkingDir: "{app}"
+Filename: "{app}\bin\utils\install-dsn.bat"; Verb: "runas"; Description: "Create a DSN (connection) now"; Flags: postinstall shellexec skipifsilent; WorkingDir: "{app}"
 
 ; ================================================
 [Code]

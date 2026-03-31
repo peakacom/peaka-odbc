@@ -8,10 +8,10 @@ setlocal enabledelayedexpansion
 ::   It guides you through driver + DSN installation.
 ::
 ::   You can also run the steps individually:
-::     tools\install-driver.bat  - register the driver DLL
-::     tools\install-dsn.bat     - create a named DSN
-::     tools\uninstall.bat       - remove a DSN or driver
-::     tools\list-dsn.bat        - show installed DSNs
+::     utils\install-driver.bat  - register the driver DLL
+::     utils\install-dsn.bat     - create a named DSN
+::     utils\uninstall.bat       - remove a DSN or driver
+::     utils\list-dsn.bat        - show installed DSNs
 :: ================================================
 
 set "SCRIPT_DIR=%~dp0"
@@ -49,24 +49,24 @@ if "!ACTION!"=="5" goto :run_list
 :run_full
 echo.
 echo  --- Step 1/2: Driver Installation ---
-call "!SCRIPT_DIR!\tools\install-driver.bat"
+call "!SCRIPT_DIR!\utils\install-driver.bat"
 echo.
 echo  --- Step 2/2: DSN Creation ---
-call "!SCRIPT_DIR!\tools\install-dsn.bat"
+call "!SCRIPT_DIR!\utils\install-dsn.bat"
 goto :eof
 
 :run_driver
-call "!SCRIPT_DIR!\tools\install-driver.bat"
+call "!SCRIPT_DIR!\utils\install-driver.bat"
 goto :eof
 
 :run_dsn
-call "!SCRIPT_DIR!\tools\install-dsn.bat"
+call "!SCRIPT_DIR!\utils\install-dsn.bat"
 goto :eof
 
 :run_uninstall
-call "!SCRIPT_DIR!\tools\uninstall.bat"
+call "!SCRIPT_DIR!\utils\uninstall.bat"
 goto :eof
 
 :run_list
-call "!SCRIPT_DIR!\tools\list-dsn.bat"
+call "!SCRIPT_DIR!\utils\list-dsn.bat"
 goto :eof

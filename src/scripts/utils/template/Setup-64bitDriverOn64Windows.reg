@@ -1,0 +1,33 @@
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\ODBC\ODBC.INI]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\ODBC\ODBC.INI\ODBC Data Sources]
+"Peaka"="Peaka ODBC Driver"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\ODBC\ODBC.INI\Peaka]
+"Driver"="Peaka ODBC Driver"
+"Description"="Peaka DSN"
+"AuthenticationType"="No Authentication"
+"Port"="8080"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\ODBC\ODBCINST.INI]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\ODBC\ODBCINST.INI\ODBC Drivers]
+"Peaka ODBC Driver"="Installed"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\ODBC\ODBCINST.INI\Peaka ODBC Driver]
+"Description"="Peaka ODBC Driver 1.2"
+"Driver"="<INSTALLDIR>\\lib\\TrinoODBC_sb64.dll"
+"Setup"="<INSTALLDIR>\\lib\\TrinoODBC_sb64.dll"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Peaka]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Peaka\Peaka ODBC Driver]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Peaka\Peaka ODBC Driver\Driver]
+"DriverManagerEncoding"="UTF-16"
+"ErrorMessagesPath"="<INSTALLDIR>\\ErrorMessages"
+"LogLevel"="0"
+"LogNamespace"=""
+"LogPath"=""
