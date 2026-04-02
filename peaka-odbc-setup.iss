@@ -5,7 +5,7 @@
 
 [Setup]
 AppName=Peaka ODBC Driver
-AppVersion=2.3.9.1001
+AppVersion=1.0.0
 AppPublisher=Peaka
 AppPublisherURL=https://peaka.com
 AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
@@ -17,7 +17,7 @@ ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 Compression=lzma2
 SolidCompression=yes
-OutputBaseFilename=PeakaODBC_Setup_2.3.9.1001
+OutputBaseFilename=PeakaODBC_Setup_1.0.0
 OutputDir=.\dist
 WizardStyle=modern
 SetupLogging=yes

@@ -301,9 +301,15 @@ Click **OK**.
 
 ### Step 6 — Authenticate
 
-When prompted for credentials, select the **API Key** tab and enter your **Peaka Project API Key**.
+Two authentication options are available. Select the one that matches your setup:
 
-You can find your API key in the Peaka console under **Project Settings → API Keys**.
+**API Key** — Power BI securely stores your Project API Key and forwards it to the driver on every connection. This is the recommended option and works regardless of what the DSN has configured.
+
+Enter your **Peaka Project API Key** in the field provided. You can find it in the Peaka console under **Project Settings → API Keys**.
+
+**Anonymous** — Power BI sends no credentials. The driver uses whatever authentication is already configured in the DSN itself (for example, a JWT token and Access Token entered directly in ODBC Administrator). Use this option when credentials are managed at the DSN level rather than in Power BI.
+
+> **Note:** "Anonymous" is the label Power BI uses for this mode — it does not mean the connection is unauthenticated. The DSN must have valid credentials configured for the connection to succeed.
 
 Click **Connect**.
 

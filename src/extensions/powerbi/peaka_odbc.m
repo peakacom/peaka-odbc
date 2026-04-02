@@ -34,8 +34,14 @@ as table meta [
 
 InputImpl = (DSN as text, optional Catalog as text, optional options as record) =>
     let
-        // Retrieve the Project API Key entered by the user in the authentication dialog.
-        ApiKey = Extension.CurrentCredential()[Key],
+        // Determine which authentication method the user chose in the Power BI
+        // credential dialog:
+        //   "Key"      — user entered a Project API Key; pass it as JWT to the driver.
+        //   "Implicit" — use whatever authentication is already configured in the DSN
+        //                (e.g. JWT Authentication with an Access Token set directly in
+        //                ODBC Administrator). No credentials are forwarded from Power BI.
+        Credential = Extension.CurrentCredential(),
+        AuthKind   = Credential[AuthenticationKind],
 
         // Build the base connection string from the DSN.
         // RemoveTypeNameParameters = 1 is required for DirectQuery compatibility with Trino:
@@ -50,34 +56,41 @@ InputImpl = (DSN as text, optional Catalog as text, optional options as record) 
                then [Catalog = Catalog]
                else []),
 
-        Connect = Odbc.DataSource(ConnectionString, [
-            HierarchicalNavigation = true,
-            HideNativeQuery = false,
-            TolerateConcatOverflow = true,
+        // Base ODBC options, independent of authentication method.
+        BaseOptions = [
+            HierarchicalNavigation  = true,
+            HideNativeQuery         = false,
+            TolerateConcatOverflow  = true,
             SqlCompatibleWindowsAuth = false,
             ClientConnectionPooling = true,
-            SoftNumbers = true,
-
-            // Pass JWT credentials securely from Power BI's credential store.
-            // AuthenticationType must be set explicitly so the driver uses JWT auth
-            // regardless of what the DSN has configured for authentication.
-            CredentialConnectionString = [
-                AuthenticationType = "JWT Authentication",
-                AccessToken = ApiKey
-            ],
-
+            SoftNumbers             = true,
             SqlCapabilities = [
-                PrepareStatements = true,
-                SupportsTop = true,
-                Sql92Conformance = 8,
-                SupportsNumericLiterals = true,
-                SupportsStringLiterals = true,
-                SupportsOdbcDateLiterals = true,
-                SupportsOdbcTimeLiterals = true,
+                PrepareStatements            = true,
+                SupportsTop                  = true,
+                Sql92Conformance             = 8,
+                SupportsNumericLiterals      = true,
+                SupportsStringLiterals       = true,
+                SupportsOdbcDateLiterals     = true,
+                SupportsOdbcTimeLiterals     = true,
                 SupportsOdbcTimestampLiterals = true,
-                Sql92Translation = "PassThrough"
+                Sql92Translation             = "PassThrough"
             ]
-        ])
+        ],
+
+        // When "API Key" is chosen: forward the key as a JWT token so the driver
+        // authenticates with Peaka regardless of what the DSN has configured.
+        // When "Anonymous" is chosen: omit CredentialConnectionString entirely so
+        // the driver falls back to the authentication settings stored in the DSN.
+        CredentialOptions =
+            if AuthKind = "Key" then [
+                CredentialConnectionString = [
+                    AuthenticationType = "JWT Authentication",
+                    AccessToken        = Credential[Key]
+                ]
+            ]
+            else [],
+
+        Connect = Odbc.DataSource(ConnectionString, BaseOptions & CredentialOptions)
     in
         Connect;
 
@@ -95,12 +108,21 @@ Peaka = [
             else
                 { "Peaka.Databases", DSN },
 
-    // Key authentication: Power BI shows a single "API Key" text field
-    // labeled "Project API Key" in the connection dialog.
+    // Two authentication options are offered in Power BI's credential dialog:
+    //
+    //   "API Key"   — Power BI securely stores the Project API Key and forwards it
+    //                 to the driver as a JWT token on every connection. Recommended
+    //                 when the DSN is shared or does not have credentials configured.
+    //
+    //   "Anonymous" — Power BI sends no credentials. The Simba driver uses whatever
+    //                 authentication is configured directly in the DSN (e.g. JWT
+    //                 Authentication with an Access Token set in ODBC Administrator).
+    //                 Useful when credentials are managed at the DSN level.
     Authentication = [
         Key = [
             KeyLabel = "Project API Key"
-        ]
+        ],
+        Implicit = []
     ]
 ];
 
