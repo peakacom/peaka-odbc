@@ -34,20 +34,20 @@ This warning appears because the installer is not digitally signed.
 
 The wizard copies all files to `C:\Program Files\Peaka\ODBC\` and registers both the 64-bit and 32-bit drivers automatically. No manual steps required.
 
-### 3. Power BI connector (optional)
+### 3. Default DSNs
+
+The installer automatically creates two System DSNs:
+
+| DSN name | Host | Port | Region |
+|---|---|---|---|
+| `Peaka` | `dbc.peaka.studio` | `4567` | US |
+| `Peaka_EU` | `dbc.eu.peaka.studio` | `4567` | EU |
+
+If a DSN with that name already exists it is left untouched. You can create additional DSNs at any time by running `bin\utils\install-dsn.bat` as administrator.
+
+### 4. Power BI connector (optional)
 
 On the "Select Additional Tasks" page, check **"Install Power BI Desktop connector"** if you plan to use Peaka with Power BI Desktop. The connector file will be placed in the correct folder automatically.
-
-### 4. Create a DSN (optional, at the end of installation)
-
-On the final page, leave **"Create a DSN (connection) now"** checked and click **Finish**.
-A UAC prompt will appear — confirm it. The DSN installer will then open.
-
-If you skip this step, you can create a DSN at any time by running:
-```
-C:\Program Files\Peaka\ODBC\bin\utils\install-dsn.bat
-```
-Right-click → **Run as administrator**.
 
 ### Uninstalling
 
@@ -291,9 +291,17 @@ A dialog will appear with the following fields:
 
 | Field | Description |
 |---|---|
-| **DSN** | The DSN name you created (e.g. `Peaka`). Required. |
+| **Connection Label** | A short name that identifies this connection (e.g. `default`, `ProjectA`, `Production`). Required. Power BI stores credentials per label, so use a different label whenever you need a separate API key. |
+| **DSN** | An ODBC DSN name configured in ODBC Administrator (e.g. `Peaka` or `Peaka_EU`). Optional. If provided, Host and Port are ignored. |
+| **Host** | Peaka host address. Optional. Used only when DSN is empty. Default: `dbc.peaka.studio`. For EU: `dbc.eu.peaka.studio`. |
+| **Port** | Peaka port. Optional. Used only when DSN is empty. Default: `4567`. |
 | **Catalog** | The catalog / database name to open. Optional — leave blank to browse all catalogs after connecting. |
 | **Data Connectivity Mode** | Select **DirectQuery** to always query live data. Select **Import** for a one-time snapshot. |
+
+**Connection mode priority:**
+1. **DSN filled** → uses that DSN, Host/Port ignored
+2. **DSN empty, Host or Port filled** → connects directly via the driver using the provided Host/Port (no DSN needed)
+3. **All empty** → uses the `Peaka` System DSN created automatically by the installer
 
 Click **OK**.
 

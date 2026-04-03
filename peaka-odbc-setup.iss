@@ -13,8 +13,8 @@ DefaultDirName={autopf}\Peaka\ODBC
 DefaultGroupName=Peaka ODBC
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 Compression=lzma2
 SolidCompression=yes
 OutputBaseFilename=PeakaODBC_Setup_1.0.0
@@ -68,9 +68,7 @@ Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\Peaka\Peaka ODBC Driver\Dr
 Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\Peaka\Peaka ODBC Driver\Driver"" /v ""LogNamespace"" /d """" /f /reg:64"; Flags: runhidden waituntilterminated
 Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\Peaka\Peaka ODBC Driver\Driver"" /v ""LogPath"" /d """" /f /reg:64"; Flags: runhidden waituntilterminated
 
-; --- Optional: create a DSN after installation ---
-; shellexec + Verb runas = fresh UAC prompt so both System and User DSN options are available
-Filename: "{app}\bin\utils\install-dsn.bat"; Verb: "runas"; Description: "Create a DSN (connection) now"; Flags: postinstall shellexec skipifsilent; WorkingDir: "{app}"
+; (DSN creation is handled automatically in the [Code] section below)
 
 ; ================================================
 [Code]
@@ -82,6 +80,49 @@ begin
     'The driver registration requires Administrator rights.' + #13#10 + #13#10 +
     'Note: this installer is not digitally signed. ' +
     'If Windows SmartScreen shows a warning, click "More info" then "Run anyway".';
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+// After all files are in place and drivers registered, silently create two
+// default System DSNs (Peaka and Peaka_EU) if they do not already exist.
+// Existing DSNs with the same name are left untouched so user-configured
+// settings are never overwritten.
+var
+  PS1File, PSContent: String;
+  ResultCode: Integer;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    PS1File := ExpandConstant('{tmp}') + '\_peaka_create_dsn.ps1';
+
+    PSContent :=
+      'function New-PeakaDSNIfAbsent($name, $host_, $port_) {' + #13#10 +
+      '  $dsnRoot = "HKLM:\SOFTWARE\ODBC\ODBC.INI"' + #13#10 +
+      '  $srcKey  = $dsnRoot + "\ODBC Data Sources"' + #13#10 +
+      '  $dsnKey  = $dsnRoot + "\" + $name' + #13#10 +
+      '  if (Test-Path $dsnKey) {' + #13#10 +
+      '    Write-Host "DSN $name already exists — skipped."' + #13#10 +
+      '    return' + #13#10 +
+      '  }' + #13#10 +
+      '  if (-not (Test-Path $srcKey)) { New-Item -Path $srcKey -Force | Out-Null }' + #13#10 +
+      '  Set-ItemProperty -Path $srcKey -Name $name -Value "Peaka ODBC Driver"' + #13#10 +
+      '  New-Item -Path $dsnKey -Force | Out-Null' + #13#10 +
+      '  Set-ItemProperty -Path $dsnKey -Name "Driver"             -Value "Peaka ODBC Driver"' + #13#10 +
+      '  Set-ItemProperty -Path $dsnKey -Name "Description"        -Value ("Peaka DSN - " + $host_)' + #13#10 +
+      '  Set-ItemProperty -Path $dsnKey -Name "Host"               -Value $host_' + #13#10 +
+      '  Set-ItemProperty -Path $dsnKey -Name "Port"               -Value $port_' + #13#10 +
+      '  Set-ItemProperty -Path $dsnKey -Name "AuthenticationType" -Value "No Authentication"' + #13#10 +
+      '  Write-Host "Created DSN: $name -> ${host_}:${port_}"' + #13#10 +
+      '}' + #13#10 +
+      'New-PeakaDSNIfAbsent "Peaka"    "dbc.peaka.studio"    "4567"' + #13#10 +
+      'New-PeakaDSNIfAbsent "Peaka_EU" "dbc.eu.peaka.studio" "4567"';
+
+    SaveStringToFile(PS1File, PSContent, False);
+    Exec('powershell.exe',
+         '-ExecutionPolicy Bypass -File "' + PS1File + '"',
+         '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    DeleteFile(PS1File);
+  end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

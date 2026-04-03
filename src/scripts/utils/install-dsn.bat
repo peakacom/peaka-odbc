@@ -171,6 +171,19 @@ if not "!PI!"=="" set "PORT=!PI!"
 echo.
 
 :: ------------------------------------------------
+:: 6. Self-signed certificate
+:: ------------------------------------------------
+echo   SSL / Self-Signed Certificate:
+echo     Enable this if the server uses a self-signed or untrusted SSL certificate.
+echo     Sets SSL=1, AllowSelfSignedServerCert=1, AllowInvalidCACert=1,
+echo     AllowHostNameCNMismatch=1.
+echo.
+set "SELFSIGNED=no"
+set /p "SSC=   Allow self-signed certificates? (yes/no) [no]: "
+if /i "!SSC!"=="yes" set "SELFSIGNED=yes"
+echo.
+
+:: ------------------------------------------------
 :: Summary
 :: ------------------------------------------------
 echo  ================================================
@@ -179,6 +192,7 @@ echo   Driver      : !DRIVER_REGNAME!
 echo   DSN Name    : !DSN_NAME!
 echo   Host        : !HOST!
 echo   Port        : !PORT!
+echo   Self-Signed : !SELFSIGNED!
 echo  ================================================
 echo.
 
@@ -188,11 +202,12 @@ echo.
 :: ------------------------------------------------
 set "PS_TMP=%TEMP%\_peaka_tmp_dsn.ps1"
 
->  "!PS_TMP!" echo $dsnName  = '!DSN_NAME!'
->> "!PS_TMP!" echo $drvName  = '!DRIVER_REGNAME!'
->> "!PS_TMP!" echo $host_    = '!HOST!'
->> "!PS_TMP!" echo $port_    = '!PORT!'
->> "!PS_TMP!" echo $odbcRoot = '!ODBC_PS_ROOT!'
+>  "!PS_TMP!" echo $dsnName    = '!DSN_NAME!'
+>> "!PS_TMP!" echo $drvName    = '!DRIVER_REGNAME!'
+>> "!PS_TMP!" echo $host_      = '!HOST!'
+>> "!PS_TMP!" echo $port_      = '!PORT!'
+>> "!PS_TMP!" echo $selfSigned = '!SELFSIGNED!'
+>> "!PS_TMP!" echo $odbcRoot   = '!ODBC_PS_ROOT!'
 >> "!PS_TMP!" echo.
 >> "!PS_TMP!" echo $srcKey = $odbcRoot + '\ODBC Data Sources'
 >> "!PS_TMP!" echo if (-not ^(Test-Path $srcKey^)) { New-Item -Path $srcKey -Force ^| Out-Null }
@@ -205,7 +220,13 @@ set "PS_TMP=%TEMP%\_peaka_tmp_dsn.ps1"
 >> "!PS_TMP!" echo Set-ItemProperty -Path $dsnKey -Name 'AuthenticationType' -Value 'No Authentication'
 >> "!PS_TMP!" echo Set-ItemProperty -Path $dsnKey -Name 'Host'               -Value $host_
 >> "!PS_TMP!" echo Set-ItemProperty -Path $dsnKey -Name 'Port'               -Value $port_
->> "!PS_TMP!" echo Write-Host "DSN registered: $dsnName -> $drvName @ ${host_}:${port_}"
+>> "!PS_TMP!" echo if ^($selfSigned -eq 'yes'^) {
+>> "!PS_TMP!" echo     Set-ItemProperty -Path $dsnKey -Name 'SSL'                       -Value '1'
+>> "!PS_TMP!" echo     Set-ItemProperty -Path $dsnKey -Name 'AllowSelfSignedServerCert' -Value '1'
+>> "!PS_TMP!" echo     Set-ItemProperty -Path $dsnKey -Name 'AllowInvalidCACert'        -Value '1'
+>> "!PS_TMP!" echo     Set-ItemProperty -Path $dsnKey -Name 'AllowHostNameCNMismatch'   -Value '1'
+>> "!PS_TMP!" echo }
+>> "!PS_TMP!" echo Write-Host "DSN registered: $dsnName -> $drvName @ ${host_}:${port_} (SSL self-signed: $selfSigned)"
 
 !PSHELL! -ExecutionPolicy Bypass -File "!PS_TMP!"
 set "PS_ERR=!errorlevel!"
