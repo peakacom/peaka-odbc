@@ -15,32 +15,37 @@ shared Peaka.Databases = Value.ReplaceType(InputImpl, InputType);
 InputType = type function (
     Label as (type text meta [
         Documentation.FieldCaption = "Connection Label",
-        Documentation.FieldDescription = "A short name that identifies this connection. Power BI stores credentials per Label, so use a different label each time you need a separate API key (e.g. ""ProjectA"", ""Production"").",
+        Documentation.FieldDescription = "A short name that identifies this connection. Power BI stores credentials per label, so use a different label whenever you need a separate API key (e.g. ""ProjectA"", ""Production"").",
         Documentation.SampleValues = {"default"}
     ]),
     optional DSN as (type text meta [
         Documentation.FieldCaption = "DSN",
-        Documentation.FieldDescription = "A User or System DSN configured in ODBC Administrator. If provided, Host and Port are ignored.",
+        Documentation.FieldDescription = "A User or System DSN configured in ODBC Administrator. If provided, Host and Port inside Advanced options are ignored.",
         Documentation.SampleValues = {"Peaka"}
     ]),
-    optional Host as (type text meta [
-        Documentation.FieldCaption = "Host",
-        Documentation.FieldDescription = "Peaka host. Used only when DSN is empty. Default: dbc.peaka.studio (US) or dbc.eu.peaka.studio (EU).",
-        Documentation.SampleValues = {"dbc.peaka.studio"}
-    ]),
-    optional Port as (type text meta [
-        Documentation.FieldCaption = "Port",
-        Documentation.FieldDescription = "Peaka port. Used only when DSN is empty. Default: 4567.",
-        Documentation.SampleValues = {"4567"}
-    ]),
-    optional Catalog as (type text meta [
-        Documentation.FieldCaption = "Catalog",
-        Documentation.FieldDescription = "Catalog / database name. Leave blank to browse all catalogs."
-    ]),
     optional options as (type [
+        optional Host = (type nullable text meta [
+            Documentation.FieldCaption = "Host",
+            Documentation.FieldDescription = "Peaka host. Used only when DSN is empty. Default: dbc.peaka.studio (US) or dbc.eu.peaka.studio (EU).",
+            Documentation.SampleValues = {"dbc.peaka.studio"}
+        ]),
+        optional Port = (type nullable text meta [
+            Documentation.FieldCaption = "Port",
+            Documentation.FieldDescription = "Peaka port. Used only when DSN is empty. Default: 4567.",
+            Documentation.SampleValues = {"4567"}
+        ]),
+        optional Catalog = (type nullable text meta [
+            Documentation.FieldCaption = "Catalog",
+            Documentation.FieldDescription = "Catalog / database name. Leave blank to browse all catalogs."
+        ]),
+        optional ConnectionString = (type nullable text meta [
+            Documentation.FieldCaption = "Connection String (non-credential properties)",
+            Documentation.FieldDescription = "Additional ODBC connection string properties in Key=Value; format. These are merged into the connection after Host/Port, before SSL settings. SSL-related keys are overridden when Allow Self-Signed Certificate is enabled.",
+            Documentation.SampleValues = {"RemoveTypeNameParameters=1;"}
+        ]),
         optional AllowSelfSignedCert = (type nullable logical meta [
             Documentation.FieldCaption = "Allow Self-Signed Certificate",
-            Documentation.FieldDescription = "When enabled, SSL is turned on and the driver accepts self-signed or otherwise untrusted server certificates. Sets SSL=1, AllowSelfSignedServerCert=1, AllowInvalidCACert=1 and AllowHostNameCNMismatch=1 on the connection. Default: false."
+            Documentation.FieldDescription = "When enabled, SSL is turned on and the driver accepts self-signed or otherwise untrusted server certificates. Sets SSL=1, AllowSelfSignedServerCert=1, AllowInvalidCACert=1 and AllowHostNameCNMismatch=1. These override any SSL keys supplied in the Connection String field. Default: false."
         ])
     ] meta [
         Documentation.FieldCaption = "Advanced options"
@@ -51,12 +56,12 @@ as table meta [
     Documentation.LongDescription = "Peaka Connector for Power BI"
 ];
 
-InputImpl = (Label as text, optional DSN as text, optional Host as text, optional Port as text, optional Catalog as text, optional options as record) =>
+InputImpl = (Label as text, optional DSN as text, optional options as record) =>
     let
         // Label is a required parameter whose sole purpose is to make the Power BI
-        // data source path unique: credentials are stored per Label so different API
-        // keys can be used with the same DSN or host by giving each connection a
-        // distinct label. The value of Label has no effect on the actual ODBC connection.
+        // data source path unique: credentials are stored per label so different API
+        // keys can be used by giving each connection a distinct label.
+        // The value of Label has no effect on the actual ODBC connection.
 
         // Determine which authentication method the user chose in the Power BI
         // credential dialog:
@@ -67,55 +72,80 @@ InputImpl = (Label as text, optional DSN as text, optional Host as text, optiona
         Credential = Extension.CurrentCredential(),
         AuthKind   = Credential[AuthenticationKind],
 
-        // Classify which connection mode to use:
-        //   DSN mode    — DSN field is non-empty; Host/Port are ignored.
-        //   Direct mode — DSN is empty but Host or Port is provided; connects
-        //                 straight to the driver without any DSN entry.
-        //   Default     — all three fields are empty; fall back to the "Peaka"
-        //                 System DSN that the installer creates automatically.
-        //
-        // RemoveTypeNameParameters = 1 is required for DirectQuery compatibility with
-        // Trino: without it Power BI may pass type-name parameters that Trino cannot
-        // handle. Hardcoding it here removes the need for manual ODBC Administrator setup.
-        HasDSN  = DSN  <> null and Text.Length(Text.Trim(DSN))  > 0,
-        HasHost = Host <> null and Text.Length(Text.Trim(Host)) > 0,
-        HasPort = Port <> null and Text.Length(Text.Trim(Port)) > 0,
+        // ── Extract values from the optional options record ──────────────────────
+        Opt = if options <> null then options else [],
 
-        EffectiveHost = if HasHost then Text.Trim(Host) else "dbc.peaka.studio",
-        EffectivePort = if HasPort then Text.Trim(Port) else "4567",
+        ExtHost    = if Record.HasFields(Opt, "Host")             then Opt[Host]             else null,
+        ExtPort    = if Record.HasFields(Opt, "Port")             then Opt[Port]             else null,
+        ExtCatalog = if Record.HasFields(Opt, "Catalog")          then Opt[Catalog]          else null,
+        ExtCS      = if Record.HasFields(Opt, "ConnectionString") then Opt[ConnectionString] else null,
+        SelfSigned = Record.HasFields(Opt, "AllowSelfSignedCert") and Opt[AllowSelfSignedCert] = true,
+
+        // ── Determine connection mode ─────────────────────────────────────────────
+        // Priority:
+        //   1. DSN filled                  → DSN mode  (Host/Port ignored)
+        //   2. DSN empty, Host or Port set → Direct mode (no DSN needed)
+        //   3. All empty                   → Default DSN "Peaka" (created by installer)
+        HasDSN  = DSN     <> null and Text.Length(Text.Trim(DSN))     > 0,
+        HasHost = ExtHost <> null and Text.Length(Text.Trim(ExtHost)) > 0,
+        HasPort = ExtPort <> null and Text.Length(Text.Trim(ExtPort)) > 0,
+
+        EffectiveHost = if HasHost then Text.Trim(ExtHost) else "dbc.peaka.studio",
+        EffectivePort = if HasPort then Text.Trim(ExtPort) else "4567",
 
         BaseConnectionString =
             if HasDSN then
-                // DSN mode
-                [ DSN = Text.Trim(DSN), RemoveTypeNameParameters = 1 ]
+                [ DSN = Text.Trim(DSN) ]
             else if HasHost or HasPort then
-                // Direct mode: bypass DSN, connect via driver + host + port
-                [ Driver = "Peaka ODBC Driver", Host = EffectiveHost, Port = EffectivePort, RemoveTypeNameParameters = 1 ]
+                [ Driver = "Peaka ODBC Driver", Host = EffectiveHost, Port = EffectivePort ]
             else
-                // Default: use the "Peaka" System DSN created by the installer
-                [ DSN = "Peaka", RemoveTypeNameParameters = 1 ],
+                [ DSN = "Peaka" ],
 
-        // When "Allow Self-Signed Certificate" is checked, enable SSL and instruct
-        // the driver to accept self-signed or otherwise untrusted server certificates.
-        SelfSigned = options <> null
-                     and Record.HasFields(options, "AllowSelfSignedCert")
-                     and options[AllowSelfSignedCert] = true,
+        // ── Parse the free-text Connection String field ───────────────────────────
+        // Accepts semicolon-separated Key=Value pairs, e.g. "RemoveTypeNameParameters=1;"
+        // Unknown or misspelled keys are passed through as-is to the driver.
+        ParseCSOptions = (cs as nullable text) as record =>
+            if cs = null or Text.Length(Text.Trim(cs)) = 0 then
+                []
+            else
+                let
+                    Pairs   = List.Select(Text.Split(cs, ";"), each Text.Length(Text.Trim(_)) > 0),
+                    KVPairs = List.Transform(Pairs, each
+                        let
+                            EqPos = Text.PositionOf(_, "="),
+                            Key   = Text.Trim(Text.Start(_, EqPos)),
+                            Val   = Text.Trim(Text.Middle(_, EqPos + 1))
+                        in
+                            {Key, Val}
+                    ),
+                    Result = Record.FromList(
+                        List.Transform(KVPairs, each _{1}),
+                        List.Transform(KVPairs, each _{0})
+                    )
+                in
+                    Result,
 
+        UserOptions = ParseCSOptions(ExtCS),
+
+        // ── SSL / self-signed certificate settings ────────────────────────────────
+        // Applied after UserOptions so they override any SSL keys the user may have
+        // set manually in the Connection String field.
         SslSettings = if SelfSigned then [
-            SSL                      = 1,
-            AllowSelfSignedServerCert = 1,
-            AllowInvalidCACert        = 1,
-            AllowHostNameCNMismatch   = 1
+            SSL                       = "1",
+            AllowSelfSignedServerCert = "1",
+            AllowInvalidCACert        = "1",
+            AllowHostNameCNMismatch   = "1"
         ] else [],
 
-        ConnectionString =
-            BaseConnectionString
-            & SslSettings
-            & (if Catalog <> null and Text.Length(Text.Trim(Catalog)) > 0
-               then [Catalog = Catalog]
-               else []),
+        CatalogSettings =
+            if ExtCatalog <> null and Text.Length(Text.Trim(ExtCatalog)) > 0
+            then [ Catalog = Text.Trim(ExtCatalog) ]
+            else [],
 
-        // Base ODBC options, independent of authentication method.
+        // Final connection string: base → user extras → SSL override → catalog
+        ConnectionString = BaseConnectionString & UserOptions & SslSettings & CatalogSettings,
+
+        // ── ODBC base options ─────────────────────────────────────────────────────
         BaseOptions = [
             HierarchicalNavigation  = true,
             HideNativeQuery         = false,
@@ -136,6 +166,7 @@ InputImpl = (Label as text, optional DSN as text, optional Host as text, optiona
             ]
         ],
 
+        // ── Credential options ────────────────────────────────────────────────────
         // When "API Key" is chosen: forward the key as a JWT token so the driver
         // authenticates with Peaka regardless of what the DSN has configured.
         // When "Anonymous" is chosen: omit CredentialConnectionString entirely so
@@ -158,14 +189,11 @@ Peaka = [
 
     TestConnection = (dataSourcePath) =>
         let
-            json    = Json.Document(dataSourcePath),
-            Label   = json[Label],
-            DSN     = if Record.HasFields(json, "DSN")     then json[DSN]     else null,
-            Host    = if Record.HasFields(json, "Host")    then json[Host]    else null,
-            Port    = if Record.HasFields(json, "Port")    then json[Port]    else null,
-            Catalog = if Record.HasFields(json, "Catalog") then json[Catalog] else null
+            json  = Json.Document(dataSourcePath),
+            Label = json[Label],
+            DSN   = if Record.HasFields(json, "DSN") then json[DSN] else null
         in
-            { "Peaka.Databases", Label, DSN, Host, Port, Catalog },
+            { "Peaka.Databases", Label, DSN },
 
     // Two authentication options are offered in Power BI's credential dialog:
     //

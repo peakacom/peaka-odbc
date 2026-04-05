@@ -209,13 +209,7 @@ C:\Windows\SysWOW64\odbcad32.exe
 | Schema | Optional. Enter a default schema, or leave blank. |
 | Time Zone ID | Optional. Leave blank to use the system time zone. Use tz database format if needed (e.g. `Europe/Istanbul`). |
 
-### 4. Enable Remove Type Name Parameters (required for Power BI DirectQuery)
-
-Click **Advanced Options**. In the dialog that opens, check **Remove Type Name Parameters**, then click **OK**.
-
-This setting is recommended for any DSN you intend to use with Power BI in DirectQuery mode. Without it, Power BI may send extra type parameters that Trino cannot handle, which can cause query failures.
-
-### 5. Test and save
+### 4. Test and save
 
 Click **Test** to verify the connection. A success message confirms the host, port, and credentials are all correct. Click **OK** to close the Test result, then click **OK** in the DSN Setup dialog to save.
 
@@ -246,20 +240,6 @@ Create the `Custom Connectors` folder if it does not exist.
 Power BI Desktop automatically loads any `.mez` files found in that folder at startup.
 
 ---
-
-### Step 2 — Enable "Remove Type Name Parameters" on the DSN
-
-This setting is recommended for any DSN you use with Power BI in DirectQuery mode. Without it, Power BI may pass extra type-name parameters that Trino cannot handle, which can cause query failures.
-
-1. Open the ODBC Administrator that matches your DSN bitness:
-   - 64-bit DSN: `C:\Windows\System32\odbcad32.exe`
-   - 32-bit DSN: `C:\Windows\SysWOW64\odbcad32.exe`
-2. On the **System DSN** or **User DSN** tab, select your Peaka DSN and click **Configure**.
-3. In the DSN Setup dialog, click **Advanced Options**.
-4. Check **Remove Type Name Parameters**.
-5. Click **OK** twice to save.
-
-> **If you created the DSN via ODBC Administrator** and already checked this option during setup (Step 4 of the section above), you can skip this step.
 
 ---
 
@@ -292,15 +272,22 @@ A dialog will appear with the following fields:
 | Field | Description |
 |---|---|
 | **Connection Label** | A short name that identifies this connection (e.g. `default`, `ProjectA`, `Production`). Required. Power BI stores credentials per label, so use a different label whenever you need a separate API key. |
-| **DSN** | An ODBC DSN name configured in ODBC Administrator (e.g. `Peaka` or `Peaka_EU`). Optional. If provided, Host and Port are ignored. |
-| **Host** | Peaka host address. Optional. Used only when DSN is empty. Default: `dbc.peaka.studio`. For EU: `dbc.eu.peaka.studio`. |
-| **Port** | Peaka port. Optional. Used only when DSN is empty. Default: `4567`. |
-| **Catalog** | The catalog / database name to open. Optional — leave blank to browse all catalogs after connecting. |
+| **DSN** | An ODBC DSN name configured in ODBC Administrator (e.g. `Peaka` or `Peaka_EU`). Optional. If provided, all Advanced options fields related to connection are ignored. |
 | **Data Connectivity Mode** | Select **DirectQuery** to always query live data. Select **Import** for a one-time snapshot. |
 
+Expand **Advanced options** to set:
+
+| Advanced field | Description |
+|---|---|
+| **Host** | Peaka host. Used only when DSN is empty. Default: `dbc.peaka.studio`. For EU: `dbc.eu.peaka.studio`. |
+| **Port** | Peaka port. Used only when DSN is empty. Default: `4567`. |
+| **Catalog** | Catalog / database name. Leave blank to browse all catalogs. |
+| **Connection String (non-credential properties)** | Additional ODBC key=value pairs in `Key=Value;` format, e.g. `SSL=1;`. These are merged after Host/Port and before SSL settings. |
+| **Allow Self-Signed Certificate** | Set to `true` to enable SSL and accept self-signed server certificates. Adds `SSL=1`, `AllowSelfSignedServerCert=1`, `AllowInvalidCACert=1`, `AllowHostNameCNMismatch=1` — overriding any SSL keys in the Connection String field. Default: `false`. |
+
 **Connection mode priority:**
-1. **DSN filled** → uses that DSN, Host/Port ignored
-2. **DSN empty, Host or Port filled** → connects directly via the driver using the provided Host/Port (no DSN needed)
+1. **DSN filled** → uses that DSN; Host, Port, and Connection String extras are still applied on top
+2. **DSN empty, Host or Port filled** → connects directly via the driver (no DSN needed)
 3. **All empty** → uses the `Peaka` System DSN created automatically by the installer
 
 Click **OK**.
@@ -361,7 +348,7 @@ Your reports can now refresh automatically through the gateway.
 The connector file is not in the correct folder, or custom connectors are not enabled. Verify the file location (`Documents\Power BI Desktop\Custom Connectors\peaka.mez`) and the Security setting in Options (Step 3), then restart Power BI Desktop.
 
 **Queries fail or return unexpected errors in DirectQuery mode**
-The "Remove Type Name Parameters" option is likely not enabled on the DSN. Open ODBC Administrator, select the DSN, click Configure → Advanced Options, check **Remove Type Name Parameters**, and click OK (Step 2 above).
+Check the connection string parameters passed to the driver. Open **File → Options and settings → Data source settings**, select the connection, and click **Edit Permissions** to verify the API key is current. If the issue persists, contact Peaka support.
 
 **"Unable to connect" / authentication error**
 Check that your Peaka Project API Key is correct and has not expired. Re-enter the API key via **File → Options → Data source settings**.
@@ -381,7 +368,6 @@ Power BI Desktop has a native ODBC data source option that connects to any ODBC 
 ### Prerequisites
 
 - Peaka ODBC Driver installed and at least one DSN configured (see [Creating a DSN via ODBC Administrator](#creating-a-dsn-via-odbc-administrator)).
-- **Remove Type Name Parameters** enabled on the DSN (Advanced Options in the DSN Setup dialog). Required for DirectQuery mode.
 
 ### Step 1 — Open the ODBC data source in Power BI
 
@@ -423,7 +409,6 @@ The Navigator panel opens and shows your Peaka catalogs, schemas, and tables. Se
 ### Notes
 
 - Because this method uses Power BI's standard ODBC connector rather than the custom Peaka connector, the authentication dialog looks different (Database/username/password instead of API Key tab). The underlying connection is the same.
-- The **Remove Type Name Parameters** setting on the DSN is equally important here. If it is not enabled, DirectQuery queries may fail.
 - If you need to update the credentials later, go to **File → Options and settings → Data source settings**, select the ODBC data source, and click **Edit Permissions**.
 
 ---
