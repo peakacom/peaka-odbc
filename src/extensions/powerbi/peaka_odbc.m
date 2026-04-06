@@ -142,8 +142,11 @@ InputImpl = (Label as text, optional DSN as text, optional options as record) =>
             then [ Catalog = Text.Trim(ExtCatalog) ]
             else [],
 
-        // Final connection string: base → user extras → SSL override → catalog
-        ConnectionString = BaseConnectionString & UserOptions & SslSettings & CatalogSettings,
+        // Fixed application identifier — hardcoded, not user-configurable.
+        AppName = [ ApplicationName = "Power BI Extension Peaka 1.0.0" ],
+
+        // Final connection string: base → app name → user extras → SSL override → catalog
+        ConnectionString = BaseConnectionString & AppName & UserOptions & SslSettings & CatalogSettings,
 
         // ── ODBC base options ─────────────────────────────────────────────────────
         BaseOptions = [
