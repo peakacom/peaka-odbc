@@ -13,7 +13,7 @@ setlocal enabledelayedexpansion
 ::     bin\install.bat               (main setup entry point)
 ::     bin\utils\**                  (helper scripts + templates)
 ::     extensions\powerbi\peaka.mez  (Power BI connector)
-::     README.md
+::     manual\README.md
 ::
 ::   Requires: 7-Zip (7z.exe)
 ::     - Install from https://7-zip.org
@@ -65,9 +65,18 @@ set "MEZ_OUT=!DIST_DIR!\peaka.mez"
 
 if exist "!MEZ_OUT!" del /f /q "!MEZ_OUT!"
 
-pushd "!MEZ_SRC!"
+:: Stamp __BUILD_DATE__ in peaka_odbc.m with today's date (YYYY-MM-DD)
+set "BUILD_DATE_STAMP="
+for /f %%D in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd"') do set "BUILD_DATE_STAMP=%%D"
+set "MEZ_STAGE=%TEMP%\_peaka_mez_stage_%RANDOM%"
+if exist "!MEZ_STAGE!" rmdir /s /q "!MEZ_STAGE!"
+xcopy /e /i /q /y "!MEZ_SRC!" "!MEZ_STAGE!" >nul
+powershell -NoProfile -Command "(Get-Content '!MEZ_STAGE!\peaka_odbc.m' -Raw).Replace('__BUILD_DATE__','!BUILD_DATE_STAMP!') | Set-Content '!MEZ_STAGE!\peaka_odbc.m' -NoNewline"
+
+pushd "!MEZ_STAGE!"
 "!SEVENZIP!" a -tzip "!MEZ_OUT!" * -mx=5 -r
 popd
+rmdir /s /q "!MEZ_STAGE!"
 
 if not exist "!MEZ_OUT!" (
     echo  [ERROR] peaka.mez was not created.
@@ -101,8 +110,9 @@ xcopy /e /i /q /y "!SRC_DIR!\scripts\utils" "!STAGE_DIR!\bin\utils\" >nul
 if not exist "!STAGE_DIR!\extensions\powerbi" mkdir "!STAGE_DIR!\extensions\powerbi"
 copy /y "!MEZ_OUT!" "!STAGE_DIR!\extensions\powerbi\peaka.mez" >nul
 
-:: Copy README
-copy /y "!SRC_DIR!\README.md" "!STAGE_DIR!\README.md" >nul
+:: Copy README into manual\ subdirectory
+if not exist "!STAGE_DIR!\manual" mkdir "!STAGE_DIR!\manual"
+copy /y "!SRC_DIR!\README.md" "!STAGE_DIR!\manual\README.md" >nul
 
 :: Create zip from staging dir
 if exist "!ZIP_OUT!" del /f /q "!ZIP_OUT!"

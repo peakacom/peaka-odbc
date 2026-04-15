@@ -226,6 +226,7 @@ set "PS_TMP=%TEMP%\_peaka_tmp_dsn.ps1"
 >> "!PS_TMP!" echo     Set-ItemProperty -Path $dsnKey -Name 'AllowInvalidCACert'        -Value '1'
 >> "!PS_TMP!" echo     Set-ItemProperty -Path $dsnKey -Name 'AllowHostNameCNMismatch'   -Value '1'
 >> "!PS_TMP!" echo }
+>> "!PS_TMP!" echo Set-ItemProperty -Path $dsnKey -Name 'RemoveTypeNameParameters' -Value '1'
 >> "!PS_TMP!" echo Write-Host "DSN registered: $dsnName -> $drvName @ ${host_}:${port_} (SSL self-signed: $selfSigned)"
 
 !PSHELL! -ExecutionPolicy Bypass -File "!PS_TMP!"

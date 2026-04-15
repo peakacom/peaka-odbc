@@ -11,7 +11,7 @@
 #     bin/install.bat               (main setup entry point)
 #     bin/utils/**                  (helper scripts + templates)
 #     extensions/powerbi/peaka.mez  (Power BI connector)
-#     README.md
+#     manual/README.md
 #
 #   Requires: zip (pre-installed on most systems)
 # ================================================
@@ -40,8 +40,16 @@ echo " [1/2] Building dist/peaka.mez ..."
 MEZ_SRC="$SRC_DIR/extensions/powerbi"
 MEZ_OUT="$DIST_DIR/peaka.mez"
 
+# Stamp __BUILD_DATE__ in peaka_odbc.m with today's date (YYYY-MM-DD)
+BUILD_DATE_STAMP="$(date +%Y-%m-%d)"
+MEZ_STAGE="$(mktemp -d)"
+cp -r "$MEZ_SRC"/* "$MEZ_STAGE/"
+sed -i.bak "s/__BUILD_DATE__/$BUILD_DATE_STAMP/g" "$MEZ_STAGE/peaka_odbc.m"
+rm -f "$MEZ_STAGE/peaka_odbc.m.bak"
+
 rm -f "$MEZ_OUT"
-(cd "$MEZ_SRC" && zip -r "$MEZ_OUT" . -x "*.DS_Store" -x "__MACOSX/*" -x "*.gitkeep")
+(cd "$MEZ_STAGE" && zip -r "$MEZ_OUT" . -x "*.DS_Store" -x "__MACOSX/*" -x "*.gitkeep")
+rm -rf "$MEZ_STAGE"
 
 echo " OK: $MEZ_OUT"
 echo
@@ -70,8 +78,9 @@ cp -r "$SRC_DIR/scripts/utils" "$STAGE_DIR/bin/utils"
 mkdir -p "$STAGE_DIR/extensions/powerbi"
 cp "$MEZ_OUT" "$STAGE_DIR/extensions/powerbi/peaka.mez"
 
-# Copy README
-cp "$SRC_DIR/README.md" "$STAGE_DIR/README.md"
+# Copy README into manual/ subdirectory
+mkdir -p "$STAGE_DIR/manual"
+cp "$SRC_DIR/README.md" "$STAGE_DIR/manual/README.md"
 
 # Create zip from staging dir
 rm -f "$ZIP_OUT"

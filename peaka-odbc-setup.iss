@@ -37,7 +37,7 @@ Source: "driver\SimbatrinoODBC64_2.3.9.1001\*"; DestDir: "{app}\driver\Simbatrin
 Source: "driver\SimbatrinoODBC32_2.3.9.1001\*"; DestDir: "{app}\driver\SimbatrinoODBC32_2.3.9.1001"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "src\scripts\utils\*"; DestDir: "{app}\bin\utils"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "src\scripts\install.bat"; DestDir: "{app}\bin"; Flags: ignoreversion
-Source: "src\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "src\README.md"; DestDir: "{app}\manual"; Flags: ignoreversion
 Source: "dist\peaka.mez"; DestDir: "{userdocs}\Power BI Desktop\Custom Connectors"; Flags: ignoreversion; Tasks: powerbi
 
 ; ================================================
@@ -111,7 +111,8 @@ begin
       '  Set-ItemProperty -Path $dsnKey -Name "Description"        -Value ("Peaka DSN - " + $host_)' + #13#10 +
       '  Set-ItemProperty -Path $dsnKey -Name "Host"               -Value $host_' + #13#10 +
       '  Set-ItemProperty -Path $dsnKey -Name "Port"               -Value $port_' + #13#10 +
-      '  Set-ItemProperty -Path $dsnKey -Name "AuthenticationType" -Value "No Authentication"' + #13#10 +
+      '  Set-ItemProperty -Path $dsnKey -Name "AuthenticationType"      -Value "No Authentication"' + #13#10 +
+      '  Set-ItemProperty -Path $dsnKey -Name "RemoveTypeNameParameters" -Value "1"' + #13#10 +
       '  Write-Host "Created DSN: $name -> ${host_}:${port_}"' + #13#10 +
       '}' + #13#10 +
       'New-PeakaDSNIfAbsent "Peaka"    "dbc.peaka.studio"    "4567"' + #13#10 +

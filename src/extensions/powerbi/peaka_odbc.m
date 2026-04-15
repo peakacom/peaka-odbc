@@ -53,7 +53,7 @@ InputType = type function (
 )
 as table meta [
     Documentation.Name = "Peaka",
-    Documentation.LongDescription = "Peaka Connector for Power BI"
+    Documentation.LongDescription = "Peaka Connector for Power BI — build __BUILD_DATE__"
 ];
 
 InputImpl = (Label as text, optional DSN as text, optional options as record) =>
@@ -145,8 +145,124 @@ InputImpl = (Label as text, optional DSN as text, optional options as record) =>
         // Fixed application identifier — hardcoded, not user-configurable.
         AppName = [ ApplicationName = "Power BI Extension Peaka 1.0.0" ],
 
-        // Final connection string: base → app name → user extras → SSL override → catalog
-        ConnectionString = BaseConnectionString & AppName & UserOptions & SslSettings & CatalogSettings,
+        // ── Driver defaults ───────────────────────────────────────────────
+        // RemoveTypeNameParameters strips precision/scale suffixes from type
+        // names reported by SQLGetTypeInfo (e.g. "varchar(65535)" → "varchar").
+        // Without this, Power BI cannot match driver types to its own type
+        // system and query folding breaks in Direct Query mode.
+        DriverDefaults = [
+            RemoveTypeNameParameters = "1"
+        ],
+
+        // Final connection string: base → app name → driver defaults → user extras → SSL override → catalog
+        // User extras come AFTER driver defaults so that the user can still
+        // override RemoveTypeNameParameters if they have a reason to.
+        ConnectionString = BaseConnectionString & AppName & DriverDefaults & UserOptions & SslSettings & CatalogSettings,
+
+        // ── SQLColumns override ───────────────────────────────────────────
+        // Two problems are solved here:
+        //
+        // 1. TYPE_NAME cleanup — The Simba ODBC driver may report type names
+        //    with precision/scale suffixes (e.g. "varchar(65535)",
+        //    "decimal(38,18)", "timestamp with time zone (6)").  Power BI
+        //    needs pure type names to match SQLGetTypeInfo entries.
+        //
+        // 2. Trino-only types mapped to ODBC equivalents — Types like uuid,
+        //    "timestamp with time zone" and "time with time zone" have no
+        //    entry in Power BI's type map.  We remap them to well-known ODBC
+        //    types so that query folding can succeed:
+        //      uuid                       → varchar   (text)
+        //      timestamp with time zone   → timestamp (datetime)
+        //      time with time zone        → time      (time)
+        //
+        // NOTE: We intentionally do NOT modify DATA_TYPE or other numeric
+        // columns.  Power BI reads SQLColumns results by ordinal position;
+        // any column reordering (e.g. via AddColumn/RemoveColumns) causes
+        // FormatException in OdbcColumnInfoCollection.EnsureInitialized.
+        // Only Table.TransformColumns (in-place, order-preserving) is safe.
+        SQLColumns = (catalogName, schemaName, tableName, columnName, source) =>
+            let
+                FixTypeName = (typeName) =>
+                    if Text.StartsWith(typeName, "array") then
+                        "array"
+                    else if Text.StartsWith(typeName, "row") then
+                        "row"
+                    else if Text.StartsWith(typeName, "json") then
+                        "json"
+                    else if Text.StartsWith(typeName, "map") then
+                        "map"
+                    else if Text.StartsWith(typeName, "uuid") then
+                        "varchar"
+                    else if Text.StartsWith(typeName, "varchar") then
+                        "varchar"
+                    else if Text.StartsWith(typeName, "char") then
+                        "char"
+                    else if Text.StartsWith(typeName, "decimal") then
+                        "decimal"
+                    else if Text.StartsWith(typeName, "timestamp") and Text.Contains(typeName, "with time zone") then
+                        "varchar"
+                    else if Text.StartsWith(typeName, "time") and Text.Contains(typeName, "with time zone") then
+                        "varchar"
+                    else if Text.StartsWith(typeName, "timestamp") then
+                        "timestamp"
+                    else if Text.StartsWith(typeName, "time") then
+                        "time"
+                    else
+                        typeName,
+
+                #"FixedTypeNameTable" = Table.TransformColumns(source, {
+                    { "TYPE_NAME", FixTypeName }
+                })
+            in
+                #"FixedTypeNameTable",
+
+        // ── SQLGetTypeInfo override ───────────────────────────────────────
+        // Power BI matches SQLColumns rows to SQLGetTypeInfo rows by BOTH
+        // TYPE_NAME and DATA_TYPE.  The Simba driver reports timestamp with
+        // time zone and time with time zone as STRING types (DATA_TYPE 12,
+        // ProviderType 13).  If we renamed them to "timestamp" / "time",
+        // Power BI would find the real "timestamp" entry (DATA_TYPE 93)
+        // first, hit a DATA_TYPE mismatch, and refuse to fold.
+        //
+        // Since the driver already returns these values as strings (e.g.
+        // "2024-01-27 18:59:33.000000 UTC"), the correct mapping is
+        // "varchar" — matching the driver's actual behavior.  The same
+        // rename must happen in BOTH SQLGetTypeInfo and SQLColumns so
+        // that TYPE_NAME + DATA_TYPE pair matches on both sides.
+        SQLGetTypeInfo = (types) =>
+            let
+                FixTypeName = (typeName) =>
+                    if Text.StartsWith(typeName, "timestamp") and Text.Contains(typeName, "with time zone") then
+                        "varchar"
+                    else if Text.StartsWith(typeName, "time") and Text.Contains(typeName, "with time zone") then
+                        "varchar"
+                    else if Text.StartsWith(typeName, "uuid") then
+                        "varchar"
+                    else
+                        typeName,
+
+                #"FixedTypes" = Table.TransformColumns(types, {
+                    { "TYPE_NAME", FixTypeName }
+                })
+            in
+                #"FixedTypes",
+
+        // ── AstVisitor ───────────────────────────────────────────────────────
+        // Trino does not support the T-SQL TOP clause; it uses LIMIT/OFFSET.
+        // Power BI generates TOP when SupportsTop is true.  This visitor
+        // rewrites TOP N into LIMIT N (with optional OFFSET) so that the
+        // generated SQL is valid Trino syntax and query folding succeeds.
+        AstVisitor = [
+            LimitClause = (skip, take) =>
+                let
+                    offset = if (skip <> null and skip > 0) then Text.Format("OFFSET #{0} ROWS", {skip}) else "",
+                    limit  = if (take <> null) then Text.Format("LIMIT #{0}", {take}) else ""
+                in
+                    [
+                        Text = Text.Format("#{0} #{1}", {offset, limit}),
+                        Location = "AfterQuerySpecification"
+                    ]
+        ],
 
         // ── ODBC base options ─────────────────────────────────────────────────────
         BaseOptions = [
@@ -156,6 +272,16 @@ InputImpl = (Label as text, optional DSN as text, optional options as record) =>
             SqlCompatibleWindowsAuth = false,
             ClientConnectionPooling = true,
             SoftNumbers             = true,
+
+            // Handlers for ODBC driver capabilities
+            AstVisitor = AstVisitor,
+            SQLColumns = SQLColumns,
+            SQLGetTypeInfo = SQLGetTypeInfo,
+
+            // Let Power BI call SQLCancel/SQLFreeHandle instead of abandoning
+            // the connection when a query is no longer needed.
+            CancelQueryExplicitly = true,
+
             SqlCapabilities = [
                 PrepareStatements            = true,
                 SupportsTop                  = true,
@@ -165,7 +291,20 @@ InputImpl = (Label as text, optional DSN as text, optional options as record) =>
                 SupportsOdbcDateLiterals     = true,
                 SupportsOdbcTimeLiterals     = true,
                 SupportsOdbcTimestampLiterals = true,
-                Sql92Translation             = "PassThrough"
+                Sql92Translation             = "PassThrough",
+                // FractionalSecondsScale tells Power BI the maximum precision
+                // for fractional seconds in TIMESTAMP literals.  Without this,
+                // Power BI may refuse to fold timestamp comparisons because it
+                // cannot determine the driver's precision capability.
+                FractionalSecondsScale       = 3
+            ],
+
+            // SQLGetInfo overrides — inform Power BI about the full set of
+            // predicates and aggregate functions supported by Trino so that
+            // more expressions can be folded to the data source.
+            SQLGetInfo = [
+                SQL_SQL92_PREDICATES   = 0x00003F07,
+                SQL_AGGREGATE_FUNCTIONS = 0x7F
             ]
         ],
 
@@ -220,7 +359,7 @@ Peaka = [
 Peaka.UI = [
     Beta = false,
     Category = "Database",
-    ButtonText = { "Peaka", "Connect to Peaka" },
+    ButtonText = { "Peaka", "Connect to Peaka — build __BUILD_DATE__" },
     SupportsDirectQuery = true,
     SourceImage = Peaka.Icons,
     SourceTypeImage = Peaka.Icons,

@@ -428,9 +428,11 @@ peaka_odbc\
 ├── driver\
 │   ├── SimbatrinoODBC64_2.3.9.1001\   64-bit driver files
 │   └── SimbatrinoODBC32_2.3.9.1001\   32-bit driver files
-└── extensions\
-    └── powerbi\
-        └── peaka.mez            Power BI Desktop custom connector
+├── extensions\
+│   └── powerbi\
+│       └── peaka.mez            Power BI Desktop custom connector
+└── manual\
+    └── README.md                This file
 ```
 
 `peaka-driver.reg` appears in the root only when the installer runs without administrator rights.
