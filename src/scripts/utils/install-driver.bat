@@ -95,9 +95,9 @@ if not errorlevel 1 (
 :: ------------------------------------------------
 :: Prepare paths
 :: ------------------------------------------------
-set "INSTALLDIR_SINGLE=!ROOT_DIR!\driver\SimbatrinoODBC!DRIVER_BIT!_2.3.9.1001"
+set "INSTALLDIR_SINGLE=!ROOT_DIR!\driver\SimbatrinoODBC!DRIVER_BIT!_2.3.10.0007"
 set "ROOT_DOUBLE=!ROOT_DIR:\=\\!"
-set "INSTALLDIR_DOUBLE=!ROOT_DOUBLE!\\driver\\SimbatrinoODBC!DRIVER_BIT!_2.3.9.1001"
+set "INSTALLDIR_DOUBLE=!ROOT_DOUBLE!\\driver\\SimbatrinoODBC!DRIVER_BIT!_2.3.10.0007"
 set "DLL_NAME=TrinoODBC_sb64.dll"
 if "!DRIVER_BIT!"=="32" set "DLL_NAME=TrinoODBC_sb32.dll"
 set "DLL_PATH_SINGLE=!INSTALLDIR_SINGLE!\lib\!DLL_NAME!"

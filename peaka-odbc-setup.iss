@@ -5,7 +5,7 @@
 
 [Setup]
 AppName=Peaka ODBC Driver
-AppVersion=1.0.0
+AppVersion=2.3.10.0007
 AppPublisher=Peaka
 AppPublisherURL=https://peaka.com
 AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
@@ -17,7 +17,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 Compression=lzma2
 SolidCompression=yes
-OutputBaseFilename=PeakaODBC_Setup_1.0.0
+OutputBaseFilename=PeakaODBC_Setup_2.3.10.0007
 OutputDir=.\dist
 WizardStyle=modern
 SetupLogging=yes
@@ -33,8 +33,8 @@ Name: "powerbi"; Description: "Install Power BI Desktop connector (peaka.mez)"; 
 
 ; ================================================
 [Files]
-Source: "driver\SimbatrinoODBC64_2.3.9.1001\*"; DestDir: "{app}\driver\SimbatrinoODBC64_2.3.9.1001"; Flags: recursesubdirs createallsubdirs ignoreversion
-Source: "driver\SimbatrinoODBC32_2.3.9.1001\*"; DestDir: "{app}\driver\SimbatrinoODBC32_2.3.9.1001"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "driver\SimbatrinoODBC64_2.3.10.0007\*"; DestDir: "{app}\driver\SimbatrinoODBC64_2.3.10.0007"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "driver\SimbatrinoODBC32_2.3.10.0007\*"; DestDir: "{app}\driver\SimbatrinoODBC32_2.3.10.0007"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "src\scripts\utils\*"; DestDir: "{app}\bin\utils"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "src\scripts\install.bat"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "src\README.md"; DestDir: "{app}\manual"; Flags: ignoreversion
@@ -46,10 +46,10 @@ Source: "dist\peaka.mez"; DestDir: "{userdocs}\Power BI Desktop\Custom Connector
 ; --- 32-bit driver (HKLM\SOFTWARE\Wow6432Node\ODBC — 32-bit hive) ---
 Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\ODBC\ODBCINST.INI\ODBC Drivers"; ValueType: string; ValueName: "Peaka ODBC Driver 32"; ValueData: "Installed"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\ODBC\ODBCINST.INI\Peaka ODBC Driver 32"; ValueType: string; ValueName: "Description"; ValueData: "Peaka ODBC Driver 32"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\ODBC\ODBCINST.INI\Peaka ODBC Driver 32"; ValueType: string; ValueName: "Driver"; ValueData: "{app}\driver\SimbatrinoODBC32_2.3.9.1001\lib\TrinoODBC_sb32.dll"
-Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\ODBC\ODBCINST.INI\Peaka ODBC Driver 32"; ValueType: string; ValueName: "Setup"; ValueData: "{app}\driver\SimbatrinoODBC32_2.3.9.1001\lib\TrinoODBC_sb32.dll"
+Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\ODBC\ODBCINST.INI\Peaka ODBC Driver 32"; ValueType: string; ValueName: "Driver"; ValueData: "{app}\driver\SimbatrinoODBC32_2.3.10.0007\lib\TrinoODBC_sb32.dll"
+Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\ODBC\ODBCINST.INI\Peaka ODBC Driver 32"; ValueType: string; ValueName: "Setup"; ValueData: "{app}\driver\SimbatrinoODBC32_2.3.10.0007\lib\TrinoODBC_sb32.dll"
 Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\Peaka\Peaka ODBC Driver 32\Driver"; ValueType: string; ValueName: "DriverManagerEncoding"; ValueData: "UTF-16"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\Peaka\Peaka ODBC Driver 32\Driver"; ValueType: string; ValueName: "ErrorMessagesPath"; ValueData: "{app}\driver\SimbatrinoODBC32_2.3.9.1001\ErrorMessages"
+Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\Peaka\Peaka ODBC Driver 32\Driver"; ValueType: string; ValueName: "ErrorMessagesPath"; ValueData: "{app}\driver\SimbatrinoODBC32_2.3.10.0007\ErrorMessages"
 Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\Peaka\Peaka ODBC Driver 32\Driver"; ValueType: string; ValueName: "LogLevel"; ValueData: "0"
 Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\Peaka\Peaka ODBC Driver 32\Driver"; ValueType: string; ValueName: "LogNamespace"; ValueData: ""
 Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\Peaka\Peaka ODBC Driver 32\Driver"; ValueType: string; ValueName: "LogPath"; ValueData: ""
@@ -60,10 +60,10 @@ Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\Peaka\Peaka ODBC Driver 32\Driver"; Va
 ; --- Register 64-bit driver explicitly in 64-bit registry hive via reg.exe /reg:64 ---
 Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\ODBC\ODBCINST.INI\ODBC Drivers"" /v ""Peaka ODBC Driver"" /d ""Installed"" /f /reg:64"; Flags: runhidden waituntilterminated
 Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\ODBC\ODBCINST.INI\Peaka ODBC Driver"" /v ""Description"" /d ""Peaka ODBC Driver"" /f /reg:64"; Flags: runhidden waituntilterminated
-Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\ODBC\ODBCINST.INI\Peaka ODBC Driver"" /v ""Driver"" /d ""{app}\driver\SimbatrinoODBC64_2.3.9.1001\lib\TrinoODBC_sb64.dll"" /f /reg:64"; Flags: runhidden waituntilterminated
-Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\ODBC\ODBCINST.INI\Peaka ODBC Driver"" /v ""Setup"" /d ""{app}\driver\SimbatrinoODBC64_2.3.9.1001\lib\TrinoODBC_sb64.dll"" /f /reg:64"; Flags: runhidden waituntilterminated
+Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\ODBC\ODBCINST.INI\Peaka ODBC Driver"" /v ""Driver"" /d ""{app}\driver\SimbatrinoODBC64_2.3.10.0007\lib\TrinoODBC_sb64.dll"" /f /reg:64"; Flags: runhidden waituntilterminated
+Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\ODBC\ODBCINST.INI\Peaka ODBC Driver"" /v ""Setup"" /d ""{app}\driver\SimbatrinoODBC64_2.3.10.0007\lib\TrinoODBC_sb64.dll"" /f /reg:64"; Flags: runhidden waituntilterminated
 Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\Peaka\Peaka ODBC Driver\Driver"" /v ""DriverManagerEncoding"" /d ""UTF-16"" /f /reg:64"; Flags: runhidden waituntilterminated
-Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\Peaka\Peaka ODBC Driver\Driver"" /v ""ErrorMessagesPath"" /d ""{app}\driver\SimbatrinoODBC64_2.3.9.1001\ErrorMessages"" /f /reg:64"; Flags: runhidden waituntilterminated
+Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\Peaka\Peaka ODBC Driver\Driver"" /v ""ErrorMessagesPath"" /d ""{app}\driver\SimbatrinoODBC64_2.3.10.0007\ErrorMessages"" /f /reg:64"; Flags: runhidden waituntilterminated
 Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\Peaka\Peaka ODBC Driver\Driver"" /v ""LogLevel"" /d ""0"" /f /reg:64"; Flags: runhidden waituntilterminated
 Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\Peaka\Peaka ODBC Driver\Driver"" /v ""LogNamespace"" /d """" /f /reg:64"; Flags: runhidden waituntilterminated
 Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\Peaka\Peaka ODBC Driver\Driver"" /v ""LogPath"" /d """" /f /reg:64"; Flags: runhidden waituntilterminated
@@ -76,7 +76,7 @@ Filename: "reg.exe"; Parameters: "add ""HKLM\SOFTWARE\Peaka\Peaka ODBC Driver\Dr
 procedure InitializeWizard;
 begin
   WizardForm.WelcomeLabel2.Caption :=
-    'This will install the Peaka ODBC Driver (v2.3.9.1001) on your computer.' + #13#10 + #13#10 +
+    'This will install the Peaka ODBC Driver (v2.3.10.0007) on your computer.' + #13#10 + #13#10 +
     'The driver registration requires Administrator rights.' + #13#10 + #13#10 +
     'Note: this installer is not digitally signed. ' +
     'If Windows SmartScreen shows a warning, click "More info" then "Run anyway".';

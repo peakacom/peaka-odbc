@@ -14,7 +14,7 @@
 
 Peaka ODBC Driver can be installed in two ways:
 
-- **Setup installer** (`PeakaODBC_Setup_2.3.9.1001.exe`) — guided wizard, recommended for most users
+- **Setup installer** (`PeakaODBC_Setup_2.3.10.0007.exe`) — guided wizard, recommended for most users
 - **ZIP / manual** (`peaka_odbc.zip`) — extract and run `bin\install.bat`, recommended for advanced users or scripted deployments
 
 Both methods install the same driver and produce the same result.
@@ -25,7 +25,7 @@ Both methods install the same driver and produce the same result.
 
 ### 1. Run the installer
 
-Right-click `PeakaODBC_Setup_2.3.9.1001.exe` → **Run as administrator**.
+Right-click `PeakaODBC_Setup_2.3.10.0007.exe` → **Run as administrator**.
 
 If Windows SmartScreen shows a warning, click **More info** → **Run anyway**.
 This warning appears because the installer is not digitally signed.
@@ -426,8 +426,8 @@ peaka_odbc\
 │       ├── list-dsn.bat
 │       └── template\            Registry templates (used internally)
 ├── driver\
-│   ├── SimbatrinoODBC64_2.3.9.1001\   64-bit driver files
-│   └── SimbatrinoODBC32_2.3.9.1001\   32-bit driver files
+│   ├── SimbatrinoODBC64_2.3.10.0007\   64-bit driver files
+│   └── SimbatrinoODBC32_2.3.10.0007\   32-bit driver files
 ├── extensions\
 │   └── powerbi\
 │       └── peaka.mez            Power BI Desktop custom connector

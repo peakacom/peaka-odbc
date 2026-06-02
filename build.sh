@@ -66,8 +66,10 @@ STAGE_DIR="$(mktemp -d)"
 cleanup() { rm -rf "$STAGE_DIR"; }
 trap cleanup EXIT
 
-# Copy driver (as-is)
-cp -r "$DRIVER_DIR" "$STAGE_DIR/driver"
+# Copy only the current version driver folders
+mkdir -p "$STAGE_DIR/driver"
+cp -r "$DRIVER_DIR/SimbatrinoODBC64_2.3.10.0007" "$STAGE_DIR/driver/"
+cp -r "$DRIVER_DIR/SimbatrinoODBC32_2.3.10.0007" "$STAGE_DIR/driver/"
 
 # Copy scripts: install.bat -> bin/  and  utils/ -> bin/utils/
 mkdir -p "$STAGE_DIR/bin"

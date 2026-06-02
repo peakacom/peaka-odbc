@@ -98,8 +98,9 @@ set "STAGE_DIR=%TEMP%\_peaka_odbc_stage_%RANDOM%"
 if exist "!STAGE_DIR!" rmdir /s /q "!STAGE_DIR!"
 mkdir "!STAGE_DIR!"
 
-:: Copy driver (as-is)
-xcopy /e /i /q /y "!DRIVER_DIR!" "!STAGE_DIR!\driver\" >nul
+:: Copy only the current version driver folders
+xcopy /e /i /q /y "!DRIVER_DIR!\SimbatrinoODBC64_2.3.10.0007" "!STAGE_DIR!\driver\SimbatrinoODBC64_2.3.10.0007\" >nul
+xcopy /e /i /q /y "!DRIVER_DIR!\SimbatrinoODBC32_2.3.10.0007" "!STAGE_DIR!\driver\SimbatrinoODBC32_2.3.10.0007\" >nul
 
 :: Copy scripts: install.bat -> bin\  and  utils\ -> bin\utils\
 if not exist "!STAGE_DIR!\bin" mkdir "!STAGE_DIR!\bin"

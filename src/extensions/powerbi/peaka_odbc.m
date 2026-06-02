@@ -167,10 +167,9 @@ InputImpl = (Label as text, optional DSN as text, optional options as record) =>
         //    "decimal(38,18)", "timestamp with time zone (6)").  Power BI
         //    needs pure type names to match SQLGetTypeInfo entries.
         //
-        // 2. Trino-only types mapped to ODBC equivalents — Types like uuid,
-        //    "timestamp with time zone" and "time with time zone" have no
-        //    entry in Power BI's type map.  We remap them to well-known ODBC
-        //    types so that query folding can succeed:
+        // 2. Trino-only types mapped to ODBC equivalents — Types like uuid
+        //    have no entry in Power BI's type map.  We remap them to
+        //    well-known ODBC types so that query folding can succeed:
         //      uuid                       → varchar   (text)
         //      timestamp with time zone   → timestamp (datetime)
         //      time with time zone        → time      (time)
@@ -180,6 +179,12 @@ InputImpl = (Label as text, optional DSN as text, optional options as record) =>
         // any column reordering (e.g. via AddColumn/RemoveColumns) causes
         // FormatException in OdbcColumnInfoCollection.EnsureInitialized.
         // Only Table.TransformColumns (in-place, order-preserving) is safe.
+        //
+        // DRIVER 2.3.10.0007: Simba reports correct DATA_TYPE for
+        // "timestamp with time zone" and "time with time zone", so we now
+        // map them to "timestamp" and "time" respectively instead of
+        // "varchar".  If this causes query folding issues, revert these
+        // two mappings back to "varchar".
         SQLColumns = (catalogName, schemaName, tableName, columnName, source) =>
             let
                 FixTypeName = (typeName) =>
@@ -200,9 +205,9 @@ InputImpl = (Label as text, optional DSN as text, optional options as record) =>
                     else if Text.StartsWith(typeName, "decimal") then
                         "decimal"
                     else if Text.StartsWith(typeName, "timestamp") and Text.Contains(typeName, "with time zone") then
-                        "varchar"
+                        "timestamp"
                     else if Text.StartsWith(typeName, "time") and Text.Contains(typeName, "with time zone") then
-                        "varchar"
+                        "time"
                     else if Text.StartsWith(typeName, "timestamp") then
                         "timestamp"
                     else if Text.StartsWith(typeName, "time") then
@@ -218,24 +223,23 @@ InputImpl = (Label as text, optional DSN as text, optional options as record) =>
 
         // ── SQLGetTypeInfo override ───────────────────────────────────────
         // Power BI matches SQLColumns rows to SQLGetTypeInfo rows by BOTH
-        // TYPE_NAME and DATA_TYPE.  The Simba driver reports timestamp with
-        // time zone and time with time zone as STRING types (DATA_TYPE 12,
-        // ProviderType 13).  If we renamed them to "timestamp" / "time",
-        // Power BI would find the real "timestamp" entry (DATA_TYPE 93)
-        // first, hit a DATA_TYPE mismatch, and refuse to fold.
+        // TYPE_NAME and DATA_TYPE.
         //
-        // Since the driver already returns these values as strings (e.g.
-        // "2024-01-27 18:59:33.000000 UTC"), the correct mapping is
-        // "varchar" — matching the driver's actual behavior.  The same
+        // DRIVER 2.3.10.0007: Simba now reports correct DATA_TYPE values
+        // for "timestamp with time zone" (93) and "time with time zone"
+        // (92), so we map them to their native ODBC type names.  The same
         // rename must happen in BOTH SQLGetTypeInfo and SQLColumns so
-        // that TYPE_NAME + DATA_TYPE pair matches on both sides.
+        // that the TYPE_NAME + DATA_TYPE pair matches on both sides.
+        //
+        // If query folding breaks after upgrading, revert "timestamp" and
+        // "time" back to "varchar" in both handlers.
         SQLGetTypeInfo = (types) =>
             let
                 FixTypeName = (typeName) =>
                     if Text.StartsWith(typeName, "timestamp") and Text.Contains(typeName, "with time zone") then
-                        "varchar"
+                        "timestamp"
                     else if Text.StartsWith(typeName, "time") and Text.Contains(typeName, "with time zone") then
-                        "varchar"
+                        "time"
                     else if Text.StartsWith(typeName, "uuid") then
                         "varchar"
                     else
